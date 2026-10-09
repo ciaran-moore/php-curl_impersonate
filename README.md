@@ -39,6 +39,7 @@ $html = curl_impersonate_exec($ch);
   - [Using it alongside ext/curl](#using-it-alongside-extcurl)
 - [Configuration (php.ini)](#configuration-phpini)
 - [Reference](#reference)
+- [IDE and static analysis support](#ide-and-static-analysis-support)
 - [Troubleshooting](#troubleshooting)
 - [Running the tests](#running-the-tests)
 
@@ -627,6 +628,40 @@ constants, and their values are almost always identical. A few masks
 differ between libcurl versions. In that case the original name keeps
 ext/curl's value, and curl-impersonate's value is also available with `CURL`
 replaced by `CURLIMP` (e.g. `CURLIMPAUTH_ANY`). Both values work in practice.
+
+---
+
+## IDE and static analysis support
+
+[`stubs/curl_impersonate.php`](stubs/curl_impersonate.php) declares every
+function, class and curl-impersonate constant with its types and a short
+description. IDEs and static analysers use it for autocompletion, parameter
+hints and type checks. The file is for tools only. Never `include` it at
+runtime.
+
+The constants shared with ext/curl (`CURLOPT_URL`, `CURLE_OK`, …) are left
+out, because every IDE already ships them with its ext/curl stubs. Only
+curl-impersonate's own constants are included (`CURLOPT_IMPERSONATE`,
+`CURLOPT_TLS_GREASE`, `CURLINFO_REDIRECT_HISTORY`, …).
+
+Copy the file into your project, or point your tools at it:
+
+| Tool | Setup |
+|---|---|
+| PhpStorm | Put the file anywhere in the project, or add its directory under *Settings → PHP → Include Path*. |
+| VS Code (Intelephense) | Add its directory to `intelephense.environment.includePaths`. |
+| PHPStan | Add it under `parameters.scanFiles` in `phpstan.neon`. |
+| Psalm | Add `<stubs><file name="path/to/curl_impersonate.php"/></stubs>` to `psalm.xml`. |
+
+After changing the extension's functions or constants, regenerate the stubs
+from the built extension:
+
+```bash
+php -n -d extension=./modules/curl_impersonate.so gen-ide-stubs.php
+```
+
+Add `--all-constants` to also include the constants shared with ext/curl, for
+setups whose tools don't have the ext/curl stubs.
 
 ---
 
