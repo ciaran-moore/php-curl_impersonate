@@ -1,0 +1,28 @@
+--TEST--
+curl_impersonate_share_errno and curl_impersonate_share_strerror basic test
+--EXTENSIONS--
+curl_impersonate
+--FILE--
+<?php
+
+$sh = curl_impersonate_share_init();
+$errno = curl_impersonate_share_errno($sh);
+echo $errno . PHP_EOL;
+echo curl_impersonate_share_strerror($errno) . PHP_EOL;
+
+try {
+    curl_impersonate_share_setopt($sh, -1, -1);
+} catch (ValueError $e) {
+    echo $e::class, ': ', $e->getMessage(), "\n";
+}
+
+$errno = curl_impersonate_share_errno($sh);
+echo $errno . PHP_EOL;
+echo curl_impersonate_share_strerror($errno) . PHP_EOL;
+?>
+--EXPECT--
+0
+No error
+ValueError: curl_impersonate_share_setopt(): Argument #2 ($option) is not a valid cURL share option
+1
+Unknown share option

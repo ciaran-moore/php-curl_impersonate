@@ -1,0 +1,26 @@
+// vim:ft=javascript
+
+// Untested: mirrors ext/curl's config.w32, linking libcurl-impersonate
+// instead of libcurl. curl-impersonate's Windows builds bundle BoringSSL,
+// nghttp2 etc., so only the import library and headers are required.
+ARG_WITH("curl-impersonate", "curl-impersonate support", "no");
+
+if (PHP_CURL_IMPERSONATE != "no") {
+	var curl_location;
+	if ((curl_location = CHECK_LIB("libcurl-impersonate_a.lib;libcurl-impersonate.lib;libcurl-impersonate.dll.a", "curl_impersonate", PHP_CURL_IMPERSONATE)) &&
+		CHECK_HEADER("curl/easy.h", "CFLAGS_CURL_IMPERSONATE", PHP_CURL_IMPERSONATE + "\\include") &&
+		CHECK_LIB("ws2_32.lib", "curl_impersonate", PHP_CURL_IMPERSONATE) &&
+		CHECK_LIB("crypt32.lib", "curl_impersonate", PHP_CURL_IMPERSONATE) &&
+		CHECK_LIB("normaliz.lib", "curl_impersonate", PHP_CURL_IMPERSONATE)
+		) {
+		EXTENSION("curl_impersonate", "interface.c multi.c share.c curl_file.c impersonate.c");
+		AC_DEFINE('HAVE_CURL_IMPERSONATE', 1, "Define to 1 if the PHP extension 'curl_impersonate' is available.");
+		ADD_FLAG("CFLAGS_CURL_IMPERSONATE", "/D PHP_CURL_IMPERSONATE_EXPORTS=1");
+		if (curl_location.match(/_a\.lib$/)) {
+			ADD_FLAG("CFLAGS_CURL_IMPERSONATE", "/D CURL_STATICLIB");
+		}
+		PHP_INSTALL_HEADERS("ext/curl_impersonate", "php_curl_impersonate.h");
+	} else {
+		WARNING("curl_impersonate not enabled; libraries and headers not found");
+	}
+}

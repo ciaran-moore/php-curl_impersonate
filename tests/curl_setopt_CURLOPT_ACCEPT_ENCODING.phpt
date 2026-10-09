@@ -1,0 +1,34 @@
+--TEST--
+Test curl_impersonate_setopt() with CURLOPT_ACCEPT_ENCODING
+--EXTENSIONS--
+curl_impersonate
+--FILE--
+<?php
+
+include 'server.inc';
+$host = curl_cli_server_start();
+
+$ch = curl_impersonate_init();
+
+$url = "{$host}/get.inc?test=";
+curl_impersonate_setopt($ch, CURLOPT_URL, $url);
+curl_impersonate_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_impersonate_setopt($ch, CURLOPT_ACCEPT_ENCODING, "gzip");
+curl_impersonate_setopt($ch, CURLINFO_HEADER_OUT, 1);
+
+// First execution, with gzip accept
+curl_impersonate_exec($ch);
+echo curl_impersonate_getinfo($ch, CURLINFO_HEADER_OUT);
+
+// Second execution, with the encoding accept disabled
+curl_impersonate_setopt($ch, CURLOPT_ACCEPT_ENCODING, NULL);
+curl_impersonate_exec($ch);
+echo curl_impersonate_getinfo($ch, CURLINFO_HEADER_OUT);
+?>
+--EXPECTF--
+GET /get.inc?test= HTTP/1.1
+Host: %s
+Accept-Encoding: gzip
+
+GET /get.inc?test= HTTP/1.1
+Host: %s
