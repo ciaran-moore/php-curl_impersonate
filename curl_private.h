@@ -25,14 +25,15 @@
 #include <curl/curl.h>
 #include <curl/multi.h>
 
-/* PHP 8.4 compatibility for APIs used by php-src's ext/curl that were added
- * in PHP 8.5 */
+/* PHP 8.4/8.5 compatibility for APIs used by php-src's ext/curl that were
+ * added in PHP 8.6. Both are macros, so test for them directly rather than
+ * by PHP_VERSION_ID. */
 #ifndef ZEND_CONTAINER_OF
 # define ZEND_CONTAINER_OF(ptr, type, member) \
 	((type *) ((char *) (ptr) - XtOffsetOf(type, member)))
 #endif
-#if PHP_VERSION_ID < 80500
-# define zend_ini_string_literal(name) zend_ini_string((name), sizeof(name) - 1, 0)
+#ifndef zend_ini_string_literal
+# define zend_ini_string_literal(name) zend_ini_string((name), sizeof("" name) - 1, 0)
 #endif
 
 #define CURLOPT_RETURNTRANSFER 19913

@@ -18,6 +18,10 @@
 
 #include "php.h"
 
+#if PHP_VERSION_ID < 80400
+# error "curl_impersonate requires PHP 8.4 or later"
+#endif
+
 #define PHP_CURL_IMPERSONATE_VERSION "0.1.0"
 
 #ifdef PHP_WIN32

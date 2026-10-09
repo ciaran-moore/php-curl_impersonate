@@ -1,6 +1,6 @@
 # curl_impersonate for PHP
 
-`curl_impersonate` is a PHP 8.4 extension that gives you PHP's familiar cURL API
+`curl_impersonate` is a PHP extension (PHP 8.4 or later) that gives you PHP's familiar cURL API
 on top of [curl-impersonate](https://github.com/lexiforest/curl-impersonate).
 Requests can match the TLS and HTTP/2 fingerprints and default headers of real
 browsers such as Chrome, Firefox, Safari and Edge.
@@ -46,7 +46,8 @@ $html = curl_impersonate_exec($ch);
 
 ## Requirements
 
-- PHP 8.4+ with its development tools (`phpize` and `php-config`)
+- PHP 8.4 or later (tested on 8.4, 8.5 and 8.6) with its development tools
+  (`phpize` and `php-config`)
 - A C compiler and `make`
 - curl-impersonate (`libcurl-impersonate` and its headers)
 
@@ -143,7 +144,8 @@ If curl-impersonate is installed under a different prefix, pass that prefix
 ```
 
 If you have several PHP versions installed, use the matching tools, e.g.
-`phpize8.4` and `./configure --with-php-config=/path/to/php-config8.4 ...`.
+`phpize8.5` and `./configure --with-php-config=/path/to/php-config8.5 ...`.
+The extension must be built separately for each PHP version you use it with.
 
 ### 3. Enable the extension
 
@@ -163,8 +165,8 @@ Typical locations:
 
 | Setup | Directory |
 |---|---|
-| Homebrew PHP on macOS | `/opt/homebrew/etc/php/8.4/conf.d/` |
-| Debian/Ubuntu (ondrej/php) | `/etc/php/8.4/mods-available/`, then run `sudo phpenmod curl_impersonate` |
+| Homebrew PHP on macOS | `/opt/homebrew/etc/php/<version>/conf.d/` |
+| Debian/Ubuntu (ondrej/php) | `/etc/php/<version>/mods-available/`, then run `sudo phpenmod curl_impersonate` |
 | Official Docker `php` images | `/usr/local/etc/php/conf.d/`, or run `docker-php-ext-enable curl_impersonate` |
 
 Restart PHP-FPM, Apache or your web server so it picks up the change.
