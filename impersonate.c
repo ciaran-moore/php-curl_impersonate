@@ -37,9 +37,9 @@ static zend_class_entry *lookup_internal_class(const char *lcname, size_t lcname
 	return (ce && ce->type == ZEND_INTERNAL_CLASS) ? ce : NULL;
 }
 
-/* Guards against the dynamic linker binding our curl_* calls to another
- * libcurl in the process (e.g. the one ext/curl uses), which happens with
- * flat symbol namespaces or without RTLD_DEEPBIND. */
+/* Checks that the library loaded by php_curl_impersonate_api_load() (or
+ * linked, on Windows) really is libcurl-impersonate, e.g. when
+ * curl_impersonate.library points elsewhere. */
 zend_result php_curl_impersonate_check_runtime_library(void)
 {
 	const curl_version_info_data *d;
@@ -55,9 +55,10 @@ zend_result php_curl_impersonate_check_runtime_library(void)
 	}
 
 	php_error_docref(NULL, E_CORE_WARNING,
-		"curl_impersonate was built against libcurl %s, but its libcurl calls resolve to libcurl %s. "
-		"Another libcurl loaded in this process is interposing libcurl-impersonate's symbols",
-		LIBCURL_VERSION, d && d->version ? d->version : "(unknown)");
+		"curl_impersonate was built against libcurl %s, but %s is libcurl %s, not libcurl-impersonate",
+		LIBCURL_VERSION,
+		php_curl_impersonate_api_library() ? php_curl_impersonate_api_library() : "the loaded library",
+		d && d->version ? d->version : "(unknown)");
 
 	return FAILURE;
 }

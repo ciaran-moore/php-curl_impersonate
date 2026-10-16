@@ -584,6 +584,7 @@ Two behaviour differences:
 | `curl_impersonate.target` | *(empty)* | anywhere (`ini_set()`) | Browser applied to every new or reset handle, e.g. `chrome136`. Empty means no automatic impersonation. |
 | `curl_impersonate.default_headers` | `On` | anywhere (`ini_set()`) | Whether `curl_impersonate.target` also adds the browser's default headers. |
 | `curl_impersonate.cainfo` | *(empty)* | php.ini only | CA bundle used to verify HTTPS certificates. `openssl.cafile` takes priority if set. |
+| `curl_impersonate.library` | *(empty)* | php.ini only | Path of the libcurl-impersonate library to load. Empty means the one found when the extension was built. |
 
 These settings take the place of curl-impersonate's `CURL_IMPERSONATE` and
 `CURL_IMPERSONATE_HEADERS` environment variables. Those still work, but the INI
@@ -671,15 +672,25 @@ setups whose tools don't have the ext/curl stubs.
 curl-impersonate isn't installed in `/usr/local` (or `/usr`). Pass its prefix,
 for example `./configure --with-curl-impersonate=/opt/curl-impersonate`.
 
-**`Unable to load dynamic library 'curl_impersonate'` / `libcurl-impersonate.so.4: cannot open shared object file`**
-On Linux, run `sudo ldconfig` after installing curl-impersonate. If it lives
-outside the linker path, add its `lib` directory to `/etc/ld.so.conf.d/`.
+**`Cannot load libcurl-impersonate: ...`**
+The extension loads libcurl-impersonate when PHP starts, from the path found
+when it was built (shown by `php --ri curl_impersonate` once it loads). If the
+library has moved, reinstall curl-impersonate, rebuild the extension, or point
+`curl_impersonate.library` at it in php.ini.
 
-**`curl_impersonate was built against libcurl ...-IMPERSONATE, but its libcurl calls resolve to libcurl ...`**
-Another libcurl in the same process is taking over curl-impersonate's
-functions. This can happen on musl-based systems such as Alpine, where the
-extension can't be isolated from PHP's own curl extension. Disable
-`ext/curl` in that PHP setup, or use a glibc-based image (e.g. Debian).
+**`curl_impersonate was built against libcurl ...-IMPERSONATE, but ... is libcurl ..., not libcurl-impersonate`**
+`curl_impersonate.library` points at a regular libcurl. Point it at
+`libcurl-impersonate.so.4` (Linux) or `libcurl-impersonate.4.dylib` (macOS).
+
+**How does it coexist with PHP's own curl extension?**
+Both libraries export the same `curl_*` functions. PHP 8.5+, and Debian's and
+Ubuntu's PHP 8.4 packages, load every extension into one shared symbol
+namespace, so normally whichever libcurl loaded first would serve both
+extensions. To prevent that, curl_impersonate isn't linked against
+libcurl-impersonate. It loads the library privately with `dlopen()`
+(`RTLD_LOCAL`, plus `RTLD_DEEPBIND` on glibc), so neither extension can see
+the other's libcurl. musl (Alpine) has no `RTLD_DEEPBIND`, and running both
+extensions together there hasn't been tested.
 
 **`SSL certificate problem: unable to get local issuer certificate`**
 Point the extension at your system's CA bundle in php.ini:

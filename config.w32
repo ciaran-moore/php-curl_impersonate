@@ -13,7 +13,7 @@ if (PHP_CURL_IMPERSONATE != "no") {
 		CHECK_LIB("crypt32.lib", "curl_impersonate", PHP_CURL_IMPERSONATE) &&
 		CHECK_LIB("normaliz.lib", "curl_impersonate", PHP_CURL_IMPERSONATE)
 		) {
-		EXTENSION("curl_impersonate", "interface.c multi.c share.c curl_file.c impersonate.c");
+		EXTENSION("curl_impersonate", "interface.c multi.c share.c curl_file.c impersonate.c curl_impersonate_api.c");
 		AC_DEFINE('HAVE_CURL_IMPERSONATE', 1, "Define to 1 if the PHP extension 'curl_impersonate' is available.");
 		ADD_FLAG("CFLAGS_CURL_IMPERSONATE", "/D PHP_CURL_IMPERSONATE_EXPORTS=1");
 		if (curl_location.match(/_a\.lib$/)) {

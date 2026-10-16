@@ -44,19 +44,33 @@ if test "$PHP_CURL_IMPERSONATE" != "no"; then
     [AC_MSG_FAILURE([The libcurl-impersonate check failed.])],
     [-L$CURL_IMPERSONATE_LIBDIR])
 
-  dnl Adds -L and the runtime search path (rpath); the macOS dylib has an
-  dnl @rpath install name, so the rpath is required there.
-  PHP_ADD_LIBRARY_WITH_PATH([curl-impersonate],
-    [$CURL_IMPERSONATE_LIBDIR],
-    [CURL_IMPERSONATE_SHARED_LIBADD])
+  dnl The extension is not linked against libcurl-impersonate: it dlopen()s
+  dnl the library into a private symbol scope at startup, so that it never
+  dnl shares curl_* symbols with ext/curl's libcurl (see
+  dnl curl_impersonate_api.h). Record which file to load.
+  AC_MSG_CHECKING([for the libcurl-impersonate library to load])
+  CURL_IMPERSONATE_LIBRARY_NAME=
+  for i in libcurl-impersonate.so.4 libcurl-impersonate.4.dylib libcurl-impersonate.so libcurl-impersonate.dylib; do
+    if test -r "$CURL_IMPERSONATE_LIBDIR/$i"; then
+      CURL_IMPERSONATE_LIBRARY_NAME=$i
+      break
+    fi
+  done
+  AS_VAR_IF([CURL_IMPERSONATE_LIBRARY_NAME], [],
+    [AC_MSG_ERROR([Cannot find a libcurl-impersonate shared library in $CURL_IMPERSONATE_LIBDIR])])
+  AC_MSG_RESULT([$CURL_IMPERSONATE_LIBDIR/$CURL_IMPERSONATE_LIBRARY_NAME])
+  AC_DEFINE_UNQUOTED([PHP_CURL_IMPERSONATE_LIBRARY],
+    ["$CURL_IMPERSONATE_LIBDIR/$CURL_IMPERSONATE_LIBRARY_NAME"],
+    [The libcurl-impersonate library loaded at startup.])
+  AC_DEFINE_UNQUOTED([PHP_CURL_IMPERSONATE_LIBRARY_NAME],
+    ["$CURL_IMPERSONATE_LIBRARY_NAME"],
+    [Looked up in the library search path if PHP_CURL_IMPERSONATE_LIBRARY is gone.])
 
-  dnl libtool links macOS bundles with -flat_namespace, which makes every
-  dnl curl_* call resolve to whichever libcurl the process loaded first
-  dnl (ext/curl's). A two-level namespace binds them to libcurl-impersonate,
-  dnl while PHP's own symbols are still looked up dynamically.
-  AS_CASE([$host_os], [darwin*], [
-    CURL_IMPERSONATE_SHARED_LIBADD="$CURL_IMPERSONATE_SHARED_LIBADD -Wl,-twolevel_namespace -Wl,-undefined,dynamic_lookup"
-  ])
+  dnl dlopen() is in libc on macOS and glibc 2.34+, and in libdl before that
+  AC_CHECK_FUNC([dlopen], [],
+    [AC_CHECK_LIB([dl], [dlopen],
+      [PHP_ADD_LIBRARY([dl], [], [CURL_IMPERSONATE_SHARED_LIBADD])],
+      [AC_MSG_ERROR([curl_impersonate requires dlopen()])])])
 
   dnl curl-impersonate specific options are enum values, so they cannot be
   dnl detected with #ifdef. Check each one so the extension builds against
@@ -113,7 +127,7 @@ if test "$PHP_CURL_IMPERSONATE" != "no"; then
   dnl -fvisibility=hidden keeps every internal symbol private, so this
   dnl extension can never bind to (or be bound by) ext/curl's symbols.
   PHP_NEW_EXTENSION([curl_impersonate],
-    [interface.c multi.c share.c curl_file.c impersonate.c],
+    [interface.c multi.c share.c curl_file.c impersonate.c curl_impersonate_api.c],
     [$ext_shared],,
     [-fvisibility=hidden])
   PHP_INSTALL_HEADERS([ext/curl_impersonate], [php_curl_impersonate.h])

@@ -303,6 +303,8 @@ static const struct php_curl_feature php_curl_features[] = {
 /* {{{ PHP_INI_BEGIN */
 PHP_INI_BEGIN()
 	PHP_INI_ENTRY("curl_impersonate.cainfo", "", PHP_INI_SYSTEM, NULL)
+	/* Overrides the libcurl-impersonate library found by configure */
+	PHP_INI_ENTRY("curl_impersonate.library", "", PHP_INI_SYSTEM, NULL)
 	/* Equivalent of the CURL_IMPERSONATE / CURL_IMPERSONATE_HEADERS
 	 * environment variables, applied to every new or reset handle. */
 	STD_PHP_INI_ENTRY("curl_impersonate.target", "", PHP_INI_ALL, OnUpdateString, default_target, zend_curl_impersonate_globals, curl_impersonate_globals)
@@ -323,6 +325,9 @@ PHP_MINFO_FUNCTION(curl_impersonate)
 	php_info_print_table_row(2, "curl-impersonate support", "enabled");
 	php_info_print_table_row(2, "Extension Version", PHP_CURL_IMPERSONATE_VERSION);
 	php_info_print_table_row(2, "cURL Information", d->version);
+	if (php_curl_impersonate_api_library()) {
+		php_info_print_table_row(2, "Library", php_curl_impersonate_api_library());
+	}
 	snprintf(str, sizeof(str), "%d", d->age);
 	php_info_print_table_row(2, "Age", str);
 
@@ -382,7 +387,14 @@ PHP_MINFO_FUNCTION(curl_impersonate)
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(curl_impersonate)
 {
+	const char *load_error = NULL;
+
 	REGISTER_INI_ENTRIES();
+
+	if (php_curl_impersonate_api_load(zend_ini_string_literal("curl_impersonate.library"), &load_error) == FAILURE) {
+		php_error_docref(NULL, E_CORE_WARNING, "%s", load_error);
+		return FAILURE;
+	}
 
 	if (php_curl_impersonate_check_runtime_library() == FAILURE) {
 		return FAILURE;

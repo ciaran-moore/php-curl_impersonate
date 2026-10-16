@@ -24,6 +24,8 @@
 
 #include <curl/curl.h>
 #include <curl/multi.h>
+/* Routes every curl_* call to libcurl-impersonate, see the header */
+#include "curl_impersonate_api.h"
 
 /* PHP 8.4/8.5 compatibility for APIs used by php-src's ext/curl that were
  * added in PHP 8.6. Both are macros, so test for them directly rather than
